@@ -29,12 +29,14 @@ jobs:
           context: ./album-viewer
           file: ./album-viewer/Dockerfile
           push: true
-          tags: ghcr.io/${{ github.repository_owner }}/gh-copilot-demo/album-viewer:latest
+          tags: |
+            ghcr.io/${{ github.repository_owner }}/gh-copilot-demo/album-viewer:latest
+            ghcr.io/${{ github.repository_owner }}/gh-copilot-demo/album-viewer:${{ github.sha }}
 
       - name: Run tests
         working-directory: ./album-viewer
         run: |
-          npm install --save-dev chai @types/chai
+          npm ci
           npm test
         env:
           NODE_ENV: test
@@ -44,4 +46,6 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: test-results
-          path: ./album-viewer/test-results || ./album-viewer/coverage || ./album-viewer # adjust as needed
+          path: |
+            ./album-viewer/test-results
+            ./album-viewer/coverage
