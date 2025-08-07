@@ -1,47 +1,47 @@
-# Github Action workflow that runs on push to main branch
-# Docker build and push the album-api image to ACR
 name: Build and Push Docker Image
+
 on:
   push:
     branches:
-      - main    # Trigger on push to main branch
+      - main  # Trigger on push to main branch
+
 jobs:
   build:
     runs-on: ubuntu-latest
+
     steps:
       - name: Checkout code
-        uses: actions/checkout@v2   # Checkout the repository code
+        uses: actions/checkout@v3
+
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v1  # Set up Docker Buildx for building images
-      - name: Log in to ACR
-        uses: docker/login-action@v1  # Log in to Azure Container Registry
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GitHub Container Registry (GHCR)
+        uses: docker/login-action@v3
         with:
-          registry: ${{ secrets.ACR_REGISTRY }}  # ACR registry URL
-          username: ${{ secrets.ACR_USERNAME }}  # ACR username
-          password: ${{ secrets.ACR_PASSWORD }}  # ACR password
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
       - name: Build and push Docker image
-        uses: docker/build-push-action@v2  # Build and push Docker image
+        uses: docker/build-push-action@v5
         with:
-          context: .  # Build context
-          file: Dockerfile  # Dockerfile to use
-          push: true  # Push the image to the registry
-          tags: ${{ secrets.ACR_REGISTRY }}/album-api:latest  # Tag for the image
-          cache-from: type=registry,ref=${{ secrets.ACR_REGISTRY }}/album-api:cache  # Cache from previous builds
-          cache-to: type=registry,ref=${{ secrets.ACR_REGISTRY }}/album-api:cache,mode=max  # Cache to use
-      - name: Logout from ACR
-        run: docker logout ${{ secrets.ACR_REGISTRY }}  # Logout from ACR
-      - name: Notify success
-        run: echo "Docker image built and pushed successfully!"  # Notify success in the workflow
-      - name: Notify failure
-        if: failure()  # Notify if the workflow fails
-        run: echo "Docker image build or push failed!"  # Notify failure in the workflow
+          context: ./album-viewer
+          file: ./album-viewer/Dockerfile
+          push: true
+          tags: ghcr.io/${{ github.repository_owner }}/gh-copilot-demo/album-viewer:latest
+
       - name: Run tests
+        working-directory: ./album-viewer
         run: |
-          npm install --save-dev chai @types/chai  # Install testing dependencies
-          npm test  # Run tests defined in package.json
+          npm install --save-dev chai @types/chai
+          npm test
         env:
-          NODE_ENV: test  # Set environment variable for tests
+          NODE_ENV: test
+
       - name: Upload test results
-        uses: actions/upload-artifact@v2  # Upload test results as an artifact
+        if: always()
+        uses: actions/upload-artifact@v4
         with:
-          name: test-results  # Name of the artifact
+          name: test-results
+          path: ./album-viewer/test-results || ./album-viewer/coverage || ./album-viewer # adjust as needed
