@@ -1,10 +1,7 @@
 ﻿using albums_api.Models;
 using Microsoft.AspNetCore.Mvc;
-using System.Net;
-using System.Text.Json;
-using System.Text;
-
-// For more information on enabling Web API for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
+using System.Collections.Generic;
+using System.Linq;
 
 namespace albums_api.Controllers
 {
@@ -12,21 +9,42 @@ namespace albums_api.Controllers
     [ApiController]
     public class AlbumController : ControllerBase
     {
-        // GET: api/album
+        // GET: albums
         [HttpGet]
         public IActionResult Get()
         {
             var albums = Album.GetAll();
-
             return Ok(albums);
         }
 
-        // GET api/<AlbumController>/5
+        // GET: albums/5
         [HttpGet("{id}")]
         public IActionResult Get(int id)
         {
-            return Ok();
+            var album = Album.GetAll().FirstOrDefault(a => a.Id == id);
+            if (album == null)
+            {
+                return NotFound();
+            }
+
+            return Ok(album);
         }
 
+        // GET: albums/sort/{by}
+        [HttpGet("sort/{by}")]
+        public IActionResult Sort(string by)
+        {
+            var albums = Album.GetAll();
+
+            IEnumerable<Album> sortedAlbums = by.ToLower() switch
+            {
+                "title" => albums.OrderBy(a => a.Title),
+                "artist" => albums.OrderBy(a => a.Artist),
+                "price" => albums.OrderBy(a => a.Price),
+                _ => albums
+            };
+
+            return Ok(sortedAlbums);
+        }
     }
 }
